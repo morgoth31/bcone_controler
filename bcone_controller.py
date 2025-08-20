@@ -104,12 +104,18 @@ def on_message(client, userdata, msg):
             mode_int = MODE_MAP.get(payload.upper())
             if mode_int is not None:
                 value_to_write = bytearray([mode_int])
-        elif command in ['standby_time', 'alarm_length', 'sensitivity', 'dnd_from', 'dnd_to']:
+        elif command in ['standby_time', 'alarm_length', 'sensitivity']:
             uuid_key = command
-            if command in ['dnd_from', 'dnd_to']:
-                 value_to_write = int(float(payload)).to_bytes(2, 'little')
-            else:
-                 value_to_write = bytearray([int(float(payload))])
+            value_to_write = bytearray([int(float(payload))])
+        elif command in ['dnd_from', 'dnd_to']:
+            uuid_key = command
+            try:
+                hours, minutes = map(int, payload.split(':'))
+                total_minutes = hours * 60 + minutes
+                value_to_write = total_minutes.to_bytes(2, 'little')
+            except ValueError:
+                print(f"Invalid time format for {command}: {payload}. Use HH:MM.")
+                return
         
         if uuid_key and value_to_write is not None:
             uuid = CHARACTERISTIC_UUIDS["read_write"].get(uuid_key) or CHARACTERISTIC_UUIDS["write"].get(uuid_key)
@@ -176,13 +182,21 @@ def publish_ha_discovery():
         "standby_time": {"name": "Standby Time", "min": 1, "max": 30, "step": 1, "unit": "min", "icon": "mdi:timer-sand"},
         "alarm_length": {"name": "Alarm Length", "min": 5, "max": 180, "step": 5, "unit": "s", "icon": "mdi:timer"},
         "sensitivity": {"name": "Sensitivity", "min": 1, "max": 5, "step": 1, "icon": "mdi:tune"},
-        "dnd_from": {"name": "DND From", "min": 0, "max": 1439, "step": 1, "unit": "min", "icon": "mdi:timer-outline"},
-        "dnd_to": {"name": "DND To", "min": 0, "max": 1439, "step": 1, "unit": "min", "icon": "mdi:timer-outline"},
     }
     for key, config in numbers.items():
         topic = f"homeassistant/number/{DEVICE_ID}/{key}/config"
         payload = {"name": f"{DEVICE_NAME} {config['name']}", "command_topic": f"ble/{DEVICE_ID}/{key}/set", "state_topic": state_topic, "value_template": f"{{{{ value_json.{key} }}}}", "min": config['min'], "max": config['max'], "step": config['step'], "unique_id": f"{DEVICE_ID}_{key}", "device": device_info, "icon": config.get("icon", "")}
         if config.get("unit"): payload["unit_of_measurement"] = config["unit"]
+        mqtt_client.publish(topic, json.dumps(payload), retain=True)
+
+    # Text entities for DND
+    dnd_entities = {
+        "dnd_from": {"name": "DND From", "icon": "mdi:timer-outline"},
+        "dnd_to": {"name": "DND To", "icon": "mdi:timer-outline"},
+    }
+    for key, config in dnd_entities.items():
+        topic = f"homeassistant/text/{DEVICE_ID}/{key}/config"
+        payload = {"name": f"{DEVICE_NAME} {config['name']}", "command_topic": f"ble/{DEVICE_ID}/{key}/set", "state_topic": state_topic, "value_template": f"{{{{ value_json.{key} }}}}", "unique_id": f"{DEVICE_ID}_{key}", "device": device_info, "icon": config.get("icon", "")}
         mqtt_client.publish(topic, json.dumps(payload), retain=True)
 
 async def read_ble_data(client):
@@ -198,9 +212,9 @@ async def read_ble_data(client):
             value_dec = int.from_bytes(value_bytes, "little")
 
             if key == "battery_level":
-                sensor_data[key] = f"{value_dec / 100.0:.2f}"
+                sensor_data[key] = f"{value_dec / 1000.0:.3f}V"
             elif key == "temperature":
-                sensor_data[key] = f"{value_dec / 100.0:.2f}"
+                sensor_data[key] = f"{value_dec}°C"
             elif key == "alarm_status":
                 sensor_data[key] = "Ringing!" if value_dec == 4 else "OFF"
             elif key == "signal_attenuation":
@@ -217,6 +231,9 @@ async def read_ble_data(client):
             value_dec = int.from_bytes(value_bytes, "little")
             if key == "mode":
                 sensor_data[key] = MODE_MAP_REVERSE.get(value_dec, "UNKNOWN")
+            elif key in ["do_not_disturb_from", "do_not_disturb_to"]:
+                hours, minutes = divmod(value_dec, 60)
+                sensor_data[key] = f"{hours:02d}:{minutes:02d}"
             else:
                 sensor_data[key] = value_dec
         except Exception as e:

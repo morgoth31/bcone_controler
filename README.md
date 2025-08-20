@@ -107,6 +107,29 @@ The script uses MQTT discovery to automatically create entities in Home Assistan
 -   **DND From:** A slider to set the "Do Not Disturb" start time.
 -   **DND To:** A slider to set the "Do Not Disturb" end time.
 
+## Bluetooth Characteristics
+
+The following table details the Bluetooth characteristics used by this script.
+
+| Name                  | UUID                                     | Permissions | Data Type/Range                               |
+| --------------------- | ---------------------------------------- | ----------- | --------------------------------------------- |
+| **Read-Only**         |                                          |             |                                               |
+| Alarm Status          | `82046727-0625-4196-aed0-f0e661b2eebd`     | Read        | `4` (Ringing), `0` (Off)                      |
+| Battery Level         | `a3768c74-4489-4d82-b557-535f33614e2b`     | Read        | Integer (e.g., `2917` for `2.917V`)           |
+| Temperature           | `4d6cbd23-061b-47a2-b82c-cdbaaed98d63`     | Read        | Integer (e.g., `27` for `27°C`)               |
+| Signal Attenuation    | `9e887463-e6fd-4ff5-a366-6d2f42901a74`     | Read        | Integer (dB)                                  |
+| **Write-Only**        |                                          |             |                                               |
+| Test Siren            | `f7bf3564-fb6d-4e53-88a4-5e37e0326063`     | Write       | `1` (Test)                                    |
+| Sensitivity (Write)   | `6362168c-c448-44db-b470-793832a3538b`     | Write       | `1-5`                                         |
+| **Read/Write**        |                                          |             |                                               |
+| Mode                  | `1c9fa3f2-6dd2-4437-a1f9-4b3d76adddfb`     | R/W         | `1` (ON), `2` (OFF), `3` (SWIM)               |
+| Sensitivity (Read)    | `6362168c-c448-44db-b470-793832154859`     | R/W         | `1-5`                                         |
+| Standby Time          | `734ecc1d-ed20-4a8c-8eeb-554476154852`     | R/W         | `1-30` (minutes)                              |
+| Alarm Length          | `734ecc1d-ed20-4a8c-8eeb-554476188831`     | R/W         | `5-180` (seconds)                             |
+| DND To                | `734ecc1d-ed20-4a8c-8eeb-554476364285`     | R/W         | `0-1439` (minutes from midnight)              |
+| DND From              | `734ecc1d-ed20-4a8c-8eeb-554476954872`     | R/W         | `0-1439` (minutes from midnight)              |
+| DND On/Off            | `e541793c-8a5e-4a5d-b6ff-c6b6c69244a1`     | R/W         | `1` (On), `0` (Off)                           |
+
 ## Contributing
 
 Contributions are welcome! Please feel free to open an issue or submit a pull request.
