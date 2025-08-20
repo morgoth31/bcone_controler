@@ -1,0 +1,16 @@
+{
+    "bluetooth": {
+        "target_address": "B4:3A:31:E4:14:FB",
+        "read_interval": 60
+    },
+    "mqtt": {
+        "broker_address": "192.168.1.62",
+        "port": 1883,
+        "username": "mqttuser",
+        "password": "mqttpassword"
+    },
+    "home_assistant": {
+        "device_id": "lifebuoy_alarm_01",
+        "device_name": "Alarme Lifebuoy"
+    }
+}
